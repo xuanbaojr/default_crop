@@ -27,7 +27,7 @@ def crop_full(full_video_path, crop_info, new_audio_path, av_path):
         full_frames.append(frame)
 
     h, w = full_frames[0].shape[:2]
-# ---------------------------------------------------------------------------------------
+    
     clx, cly, crx, cry = crop_info[1]
     crx = int(crx + min(clx, w-crx)/rate)
     clx = int(clx - min(clx, w-crx)/rate)
@@ -51,3 +51,4 @@ def crop_full(full_video_path, crop_info, new_audio_path, av_path):
     save_video_with_watermark(
         tmp_path, new_audio_path, av_path, watermark=False
     )
+    os.remove(tmp_path)

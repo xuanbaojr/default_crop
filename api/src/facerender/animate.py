@@ -1,10 +1,8 @@
 from pydub import AudioSegment
 from src.facerender.modules.make_animation import make_animation
-from src.utils.paste_vid import paste_vid
 from src.utils.videoio import save_video_with_watermark
 from src.utils.crop_full import crop_full
 from src.utils.paste_pic_full import paste_pic_full
-from src.utils.paste_pic import paste_pic
 from src.utils.face_enhancer import enhancer_generator_with_len, enhancer_list
 from src.facerender.modules.generator import OcclusionAwareGenerator, OcclusionAwareSPADEGenerator
 from src.facerender.modules.mapping import MappingNet
@@ -13,6 +11,7 @@ import torchvision
 import torch
 import imageio
 import os
+import shutil
 import cv2
 import yaml
 import numpy as np
@@ -231,16 +230,12 @@ class AnimateFromCoeff():
             img = cv2.imread(pic_path)
             body_h, body_w = img.shape[:2]
 
-            print("body_w", body_w)
-            print("body_h", body_h)
-
         video_name = x["video_name"] + ".mp4"
         path = os.path.join(video_save_dir, "temp_" + video_name)
 
         imageio.mimsave(path, result, fps=float(25))
 
         av_path = os.path.join(video_save_dir, video_name)
-        return_path = av_path
 
         audio_path = x["audio_path"]
         audio_name = os.path.splitext(os.path.split(audio_path)[-1])[0]
@@ -256,13 +251,11 @@ class AnimateFromCoeff():
 
         save_video_with_watermark(
             path, new_audio_path, av_path, watermark=False)
-        print(f"The generated video is named {video_save_dir}/{video_name}")
-        ################################################
+        return_path = av_path
 
         video_name_full = x["video_name"] + "_full.mp4"
         full_video_path = os.path.join(video_save_dir, video_name_full)
 
-        return_path = full_video_path
         paste_pic_full(
             path,
             pic_path,
@@ -271,87 +264,13 @@ class AnimateFromCoeff():
             full_video_path,
             extended_crop=True if "ext" in preprocess.lower() else False,
         )
-        print(
-            f"The generated video is named {video_save_dir}/{video_name_full}")
+        if preprocess == "full":
+            return_path = full_video_path
 
         if preprocess == "crop" and still_mode:
 
             crop_full(full_video_path, crop_info, new_audio_path, av_path)
-            full_video_path = av_path
-
-        if preprocess == "crop" and not still_mode:
-
-            predictions_video_full = make_animation(source_image_full, source_semantics_full, target_semantics_full,
-                                                    self.generator, self.kp_extractor, self.he_estimator, self.mapping,
-                                                    yaw_c_seq, pitch_c_seq, roll_c_seq, use_exp=True)
-
-            predictions_video_full = predictions_video_full.reshape(
-                (-1,)+predictions_video_full.shape[2:])
-            predictions_video_full = predictions_video_full[:frame_num]
-
-            video_full = []
-            for idx in range(predictions_video.shape[0]):
-
-                image_full = predictions_video_full[idx]
-                image_full = np.transpose(image_full.data.cpu().numpy(), [
-                                          1, 2, 0]).astype(np.float32)
-                video_full.append(image_full)
-
-            result_full = img_as_ubyte(video_full)
-
-            if original_size:
-                result_full = [cv2.resize(result_i, (img_size, int(
-                    img_size * original_size[1]/original_size[0]))) for result_i in result_full]
-
-            video_name_still_body = x["video_name"] + "_still_body.mp4"
-            path = os.path.join(video_save_dir, "temp_" +
-                                video_name_still_body)
-            imageio.mimsave(path, result_full, fps=float(25))
-
-            av_path_full = os.path.join(video_save_dir, video_name_still_body)
-            save_video_with_watermark(
-                path, new_audio_path, av_path_full, watermark=False)
-
-            video_name_still_final = x["video_name"] + "_still_final.mp4"
-            full_video_path_final = os.path.join(
-                video_save_dir, video_name_still_final)
-            paste_vid(av_path, av_path_full, crop_info,
-                      new_audio_path, full_video_path_final, body_h, body_w)
-            paste_pic(full_video_path_final, pic_path_source, crop_info,
-                       new_audio_path, full_video_path, extended_crop=False)
-            return_path = full_video_path
-
-        # paste back then enhancers
-        if enhancer and preprocess == "crop":
-            video_name_enhancer = x["video_name"] + "_enhanced.mp4"
-            enhanced_path = os.path.join(
-                video_save_dir, "temp_" + video_name_enhancer)
-            av_path_enhancer = os.path.join(
-                video_save_dir, video_name_enhancer)
-            return_path = av_path_enhancer
-            try:
-                enhanced_images_gen_with_len = enhancer_generator_with_len(
-                    full_video_path, method=enhancer, bg_upsampler=background_enhancer
-                )
-                imageio.mimsave(
-                    enhanced_path, enhanced_images_gen_with_len, fps=float(25)
-                )
-            except:
-                enhanced_images_gen_with_len = enhancer_list(
-                    full_video_path, method=enhancer, bg_upsampler=background_enhancer
-                )
-                imageio.mimsave(
-                    enhanced_path, enhanced_images_gen_with_len, fps=float(25)
-                )
-
-            save_video_with_watermark(
-                enhanced_path, new_audio_path, av_path_enhancer, watermark=False
-            )
-
-            os.remove(enhanced_path)
+            return_path = av_path
 
         os.remove(path)
-        os.remove(new_audio_path)
-        print(f"The generated video is named {return_path}")
-
         return return_path

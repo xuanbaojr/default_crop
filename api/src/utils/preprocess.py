@@ -145,12 +145,9 @@ class CropAndExtract():
         if not os.path.isfile(landmarks_path):
             lm = self.propress.predictor.extract_keypoint(
                 frames_pil, landmarks_path)
-            if not still_mode and crop_or_resize == "crop":
-                lm_full = self.propress.predictor.extract_keypoint(
-                    frames_pil_full, landmarks_path)
-            else:
-                lm_full = self.propress.predictor.extract_keypoint(
-                    frames_pil, landmarks_path)
+
+            lm_full = self.propress.predictor.extract_keypoint(
+                frames_pil, landmarks_path)
 
         else:
             print(' Using saved landmarks.')

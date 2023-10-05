@@ -27,11 +27,8 @@ class SadTalker:
     ):
         if torch.cuda.is_available():
             device = "cuda:0"
-            print("cudaaaa")
         else:
             device = "cpu"
-            print("cpuuuuuuuuu")
-
         self.device = device
 
         os.environ["TORCH_HOME"] = checkpoint_path
@@ -76,7 +73,7 @@ class SadTalker:
         pic_path_source = os.path.join(
             input_dir, os.path.basename(source_image))
 
-        shutil.copy(source_image, input_dir)
+        shutil.move(source_image, input_dir)
 
         # audio_path
         if driven_audio is not None and os.path.isfile(driven_audio):
@@ -89,24 +86,7 @@ class SadTalker:
                     ".mp3", ".wav"), 16000)
                 audio_path = audio_path.replace(".mp3", ".wav")
             else:
-                shutil.copy(driven_audio, input_dir)
-
-        if not still_mode and preprocess == 'crop':
-            source_image = self.img_pre.img_pre(source_image)
-            pic_path_source = source_image
-            pic_name = os.path.splitext(os.path.split(source_image)[-1])[0]
-
-            output_path = './' + pic_name + '_nobg.png'
-
-            with open(source_image, 'rb') as i:
-                with open(output_path, 'wb') as o:
-                    input = i.read()
-                    output = remove(input)
-                    o.write(output)
-
-            pic_path = os.path.join(input_dir, os.path.basename(output_path))
-
-            shutil.copy(output_path, input_dir)
+                shutil.move(driven_audio, input_dir)
 
         first_frame_dir = os.path.join(save_dir, "first_frame_dir")
         os.makedirs(first_frame_dir, exist_ok=True)

@@ -1,5 +1,5 @@
 import io
-import os
+import os,shutil
 import time
 from contextlib import asynccontextmanager
 from typing import List
@@ -43,7 +43,6 @@ async def lifespan(app: FastAPI):
 
         img = pipe(prompt=prompt, negative_prompt=negative_prompt, width=512, height=512,
                    num_inference_steps=25, guidance_scale=7, num_images_per_prompt=1, generator=gen).images[0]
-        img.save("image01.png")
 
         models["pipe"] = pipe
 
@@ -65,11 +64,10 @@ def read_root():
     return {"hello": "world"}
 
 
-@app.post("/video/")
+@app.post("/prediction/")
 @torch.inference_mode()
 def predict(prompt: str = Form(...)):
 
-    print("xysas")
     image = models["pipe"](
         prompt=prompt, negative_prompt="(deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime:1.4), text, close up, cropped, out of frame, worst quality, low quality, jpeg artifacts, ugly, duplicate, morbid, mutilated, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck",
         width=512, height=512, num_inference_steps=25, guidance_scale=7.5, num_images_per_prompt=1
@@ -81,7 +79,7 @@ def predict(prompt: str = Form(...)):
     return Response(content=img_byte_arr, media_type="image/png")
 
 
-@app.post("/prediction/")
+@app.post("/video/")
 def create_item(still_mode: bool = Form(...), crop: bool = Form(...), files: List[UploadFile] = File(...)):
     audio_path, image_path = files[0].filename, files[1].filename
 
@@ -100,5 +98,7 @@ def create_item(still_mode: bool = Form(...), crop: bool = Form(...), files: Lis
 
     with open(result_path, 'rb') as fd:
         contents = fd.read()
+    shutil.rmtree('./results')
+    
 
     return Response(content=contents, media_type="video/mp4")

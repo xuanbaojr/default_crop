@@ -1,4 +1,4 @@
-import io
+import io,os
 import json
 
 import gradio as gr
@@ -31,6 +31,7 @@ def validate_video_input(audio, image):
 
 
 def enable_state_video():
+    os.remove("result.mp4")
     return {
         file_output: gr.update(interactive=True),
         result_image: gr.update(interactive=True),

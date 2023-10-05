@@ -52,7 +52,6 @@ def paste_pic_full(
     else:
         r_w, r_h = crop_info[0]
         clx, cly, crx, cry = crop_info[1]
-        print("ox1", crop_info[1])
         lx, ly, rx, ry = crop_info[2]
         lx, ly, rx, ry = int(lx), int(ly), int(rx), int(ry)
 
